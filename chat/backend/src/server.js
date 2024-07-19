@@ -1,20 +1,27 @@
-const { WebSocketServer } = require("ws");
-const dotenv = require("dotenv");
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 
-dotenv.config();
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-const wss = new WebSocketServer({ port: process.env.PORT || 8080 });
+app.use(express.static('public')); // Serve os arquivos estáticos da pasta 'public'
 
-wss.on("connection", (ws) => {
-    ws.on("error", console.error);
+io.on('connection', (socket) => {
+    console.log('Novo cliente conectado');
 
-    ws.on("message", (data) => {
-        wss.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(data.toString());
-            }
-        });
+    socket.on('message', (message) => {
+        console.log('Mensagem recebida:', message);
+        io.emit('message', message); // Envia a mensagem para todos os clientes conectados
     });
 
-    console.log("client connected");
+    socket.on('disconnect', () => {
+        console.log('Cliente desconectado');
+    });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
